@@ -1,0 +1,16 @@
+{
+  "name": "rekognition-demo",
+  "version": "1.0.0",
+  "description": "",
+
+
+  "repository": {
+    "type": "git",
+    "url": "https://git-codecommit.ap-northeast-2.amazonaws.com/v1/repos/rekognition-demo"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}

@@ -1,0 +1,216 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation Sample Template S3_Website_Bucket_With_Retain_On_Delete: Sample template showing how to create a publicly accessible S3 bucket configured for website access with a deletion policy of retail on delete. **WARNING** This template creates an S3 bucket that will NOT be deleted when the stack is deleted. You will be billed for the AWS resources used if you create a stack from this template.",
+    "Resources": {
+        "UserTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "faceId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "faceId",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5
+                },
+                "TableName": "rekognition-demo-go"
+            }
+        },
+        "Hosting": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "PublicRead",
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html"
+                }
+            }
+        },
+        "S3Upload": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "BucketOwnerFullControl",
+                "CorsConfiguration": {
+                    "CorsRules": [
+                        {
+                            "AllowedHeaders": [
+                                "*"
+                            ],
+                            "AllowedMethods": [
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "DELETE",
+                                "HEAD"
+                            ],
+                            "AllowedOrigins": [
+                                {
+                                    "Fn::GetAtt": [
+                                        "Hosting",
+                                        "WebsiteURL"
+                                    ]
+                                },
+                                "http://*"
+                            ],
+                            "Id": "myCORSRuleId1"
+                        }
+                    ]
+                }
+            }
+        },
+        "identityPool": {
+            "Type": "AWS::Cognito::IdentityPool",
+            "Properties": {
+                "IdentityPoolName": "mxnetServerlessIdentity",
+                "AllowUnauthenticatedIdentities": "true"
+            }
+        },
+        "unauthRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Federated": "cognito-identity.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRoleWithWebIdentity",
+                            "Condition": {
+                                "StringEquals": {
+                                    "cognito-identity.amazonaws.com:aud": {
+                                        "Ref": "identityPool"
+                                    }
+                                },
+                                "ForAnyValue:StringLike": {
+                                    "cognito-identity.amazonaws.com:amr": "unauthenticated"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "unauthRolePolicies": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "s3uploadpolicy",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "mobileanalytics:PutEvents",
+                                "cognito-sync:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Resource": {
+                                "Fn::Join": [
+                                    "/",
+                                    [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "S3Upload",
+                                                "Arn"
+                                            ]
+                                        },
+                                        "*"
+                                    ]
+                                ]
+                            }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:*"
+                            ],
+                            "Resource": {
+                                "Fn::GetAtt": [
+                                    "S3Upload",
+                                    "Arn"
+                                ]
+                            }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "rekognition:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": ["dynamodb:Scan", "dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:UpdateItem"],
+                            "Resource": [
+                              {"Fn::Join" : ["", ["arn:aws:dynamodb:", {"Ref": "AWS::Region"}, ":", {"Ref": "AWS::AccountId"}, ":table/rekognition-demo-go*"]]}
+                            ]
+                        }
+                    ]
+                },
+                "Roles": [
+                    {
+                        "Ref": "unauthRole"
+                    }
+                ]
+            }
+        },
+        "identityPoolRole": {
+            "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+            "Properties": {
+                "IdentityPoolId": {
+                    "Ref": "identityPool"
+                },
+                "Roles": {
+                    "unauthenticated": {
+                        "Fn::GetAtt": [
+                            "unauthRole",
+                            "Arn"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "WebsiteURL": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Hosting",
+                    "WebsiteURL"
+                ]
+            },
+            "Description": "URL for website hosted on S3"
+        },
+        "UploadBucketName": {
+            "Value": {
+                "Ref": "S3Upload"
+            },
+            "Description": "Name of S3 bucket to upload images"
+        },
+        "IdentityPoolId": {
+            "Value": {
+                "Ref": "identityPool"
+            },
+            "Description": "IdentityPool ID"
+        }
+    }
+}

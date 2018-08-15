@@ -1,0 +1,94 @@
+<div class="animated fadeIn">
+    <!-- Upload Box -->
+    <div class="row">
+        <div class="col-sm-12 col-lg-12 col-xs-12">
+            <div class="card card-inverse card-success" style="background-color: #333; border-color: #333;">
+
+                <div class="card-block  p-b-0">
+                    <h3 class="card-title">Select a File</h3>
+                    <label class="custom-file mt-2">
+                        <input type="file" id="image_file" ng-model="image_file" class="custom-file-input" validfiles accept=".gif, .jpeg" onchange="angular.element(this).scope().change_filename()">
+                        <span id="custom-file-control" class="custom-file-control" data-content="Choose file..."></span>
+                    </label>
+                    <div class="btn-group pull-right p-a-0 mt-2">
+                        <button type="button" ng-click="upload_photo()" id="btn_upload" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Uploading..."
+                            data-original-text="<i class='icon-camera'/>  Upload" class="btn btn-primary">
+                            <i class="icon-camera"></i> Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Boostrap Card Columns for Analyzed Images -->
+    <div class="row"> </div>
+    <div class="card-columns">
+        <div class="card pb-2" ng-repeat="b_image in bucket_images | orderBy:'-LastModified'">
+            <img ng-src="{{b_image.URL}}" class="card-img-top " alt="...">
+
+            <div class="card-block p-b-0" style="min-height:100px;">
+
+
+
+                <div class="card">
+                    <div class="card-header" role="tab" id="heading_labels_{{b_image.index}}">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapse_labels_{{b_image.index}}" aria-expanded="false"
+                                aria-controls="collapse_labels_{{b_image.index}}" ng-click="detect_labels(b_image.Key,b_image.index)">
+                                Detect Labels
+                            </button>
+                        </h5>
+                    </div>
+
+                    <div id="collapse_labels_{{b_image.index}}" class="collapse" aria-labelledby="heading_labels_{{b_image.index}}">
+                        <div class="card-body p-2">
+                            <ul class="horizontal-bars type-2">
+                                <li ng-repeat="result in b_image.Item">
+                                    <span class="title"> {{ result.Name | limitTo: 40 }}{{result.name.length > 40 ? "&hellip;" : ""}}</span>
+                                    <span class="value">{{result.Confidence| number:2}}%</span>
+                                    <div class="bars">
+                                        <progress class="progress progress-xs progress-warning m-a-0" max="100" value="{{result.Confidence}}">{{result.Confidence| number:2}}%</progress>
+                                    </div>
+                                </li>
+                            </ul>
+                            <p class="lead ml-3" ng-if="b_image.Item.length==0">No Label was found.</p>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="card">
+                    <div class="card-header" role="tab" id="heading_mod_labels_{{b_image.index}}">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapse_mod_labels_{{b_image.index}}" aria-expanded="false"
+                                aria-controls="collapse_mod_labels_{{b_image.index}}" ng-click="detect_moderation_labels(b_image.Key,b_image.index)">
+                                Detect Moderation Labels
+                            </button>
+                        </h5>
+                    </div>
+                    <div id="collapse_mod_labels_{{b_image.index}}" class="collapse" aria-labelledby="heading_mod_labels_{{b_image.index}}" data-parent="#accordion_{{b_image.index}}">
+                        <div class="card-body p-2">
+                            <ul class="horizontal-bars type-2">
+                                <li ng-repeat="result in b_image.Item_Moderation">
+                                    <span class="title"> {{ result.Name | limitTo: 40 }}{{result.name.length > 40 ? "&hellip;" : ""}}</span>
+                                    <span class="value">{{result.Confidence| number:2}}%</span>
+                                    <div class="bars">
+                                        <progress class="progress progress-xs progress-warning m-a-0" max="100" value="{{result.Confidence}}">{{result.Confidence| number:2}}%</progress>
+                                    </div>
+                                </li>
+                            </ul>
+                            <p class="lead ml-3" ng-if="b_image.Item_Moderation.length==0">No Label was found.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group  mt-2 float-right">
+                    <button type="button" ng-click="delete_photo(b_image.Key,b_image.index)" class="btn btn-primary">
+                        <i class="icon-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
